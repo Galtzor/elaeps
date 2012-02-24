@@ -1,0 +1,10 @@
+import datetime
+class Calendar():
+    def __init__(self):
+        self.date = datetime.date.today()
+        self.delta = datetime.timedelta(1)     # Ein dag forskjell fra dag til dag.
+    def nextDay(self):
+        self.date = self.date + self.delta
+
+    def getDate(self):
+        return self.date

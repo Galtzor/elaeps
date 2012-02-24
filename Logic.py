@@ -1,31 +1,32 @@
-import sys, pygame, math, Renderer
+import sys, pygame, math, Renderer, Calendar
 class Logic:
-    def __init__(self, screenSize, center, distance, timePos, timeFont, square, squarePos, timeText, backgroundColor, textColor, lineEnd, lineColor, pm, squareSize):
+    def __init__(self, center, distance, squarePos, lineEnd, pm, squareSize, renderer):
         #lag lokale variabler av ALLE CONSTANTS!!
-        self.screenSize, self.center, self.distance, self.timePos, self.timeFont, self.square, self.squarePos, self.timeText, self.backgroundColor, self.textColor, self.lineEnd, self.lineColor, self.pm, self.squareSize = screenSize, center, distance, timePos, timeFont, square, squarePos, timeText, backgroundColor, textColor, lineEnd, lineColor, pm, squareSize
+        self.center, self.distance, self.squarePos, self.lineEnd, self.pm, self.squareSize, self.renderer = center, distance, squarePos, lineEnd, pm, squareSize, renderer
+        self.calendar = Calendar.Calendar()
+        self.date = self.calendar.getDate()
         self.initialize()
+        
     def initialize(self):
-        self.renderer = Renderer.Renderer(self.screenSize)
+        self.quadrant = findQuadrant(self.lineEnd, self.center)
+        self.pressed = False
+        #self.renderer.initialize() trengs denne????
         self.renderAll()
         
-        self.pressed = False
-        self.quadrant = findQuadrant(self.lineEnd, self.center)
-
-        print(self.quadrant)
+        
 
         
 
     def renderAll(self):
-        self.renderer.renderAll(self.backgroundColor, self.lineColor, self.center, self.lineEnd, self.square, self.squarePos, self.timeText, self.timePos)
+        self.renderer.renderAll(self.lineEnd, self.squarePos, self.findTime(), self.calendar)
     def update(self):
         self.handleInput()
-        self.timeText = self.timeFont.render(findTime(self.lineEnd, self.center, self.quadrant, self.pm), 1, self.textColor)
         self.renderAll()
         
 
     def handleInput(self):
         e = pygame.event.wait()
-        if e.type == pygame.QUIT: sys.exit()
+        if e.type == pygame.QUIT: sys.exit() #Hvis du trykker på "x" -> quit
         elif self.pressed:
             #lagre forige posisjon, for retningsbestemmelse, midten av klossen. RELATIV TIL CENTER
             old_pos = (self.squarePos[0] + self.squareSize/2) - self.center[0], (self.squarePos[1] + self.squareSize/2) - self.center[1]
@@ -61,7 +62,7 @@ class Logic:
 
 
         # SKJEKKER OM FLYTTET GÅR I RIKTIG RETNING, HVIS FEIL RETURNER GAMMELT KOORDINAT.
-    def checkDirection(self, A, B): #A er nytt koordinat, B er gammelt, kvadrant er global variabel
+    def checkDirection(self, A, B): #A er nytt koordinat, B er gammelt, quadrant er en variabel på klassenivå(self.quadrant)
         aX, aY = A[0], A[1]
         bX, bY = B[0], B[1]
         
@@ -92,7 +93,10 @@ class Logic:
     def plusplusQuadrant(self):
         if self.quadrant == 4:
             self.quadrant = 1
-            if self.pm: self.pm = False
+            if self.pm:
+                self.pm = False     # ERSTATT PM SKJEKKEN MED ET FUNKSJONSKALL FOR aa ENDRE DAG.
+                self.calendar.nextDay()
+                print(self.calendar.toString())
             else: self.pm = True
         else:
             self.quadrant = self.quadrant + 1
@@ -109,34 +113,45 @@ class Logic:
         return (x*self.distance/vector_len, y*self.distance/vector_len)
             
 
+    def findTime(self):        # TESTED, WORKING BIATCH
+        halfpi  = math.pi / 2
 
+        # 1. finn vektor, gange med -1 for å sleppe mongotenkning. da er Y oppover positiv.
+        lcVec = self.lineEnd[0] - self.center[0], (self.lineEnd[1] - self.center[1]) * - 1
+        #regn ut vinkelen alpha!
+        if self.quadrant == 1 or self.quadrant == 3: # |atan(x/y)| + 0 degrees or + 180 degrees   - radians
+            alpha = (self.quadrant - 1) * halfpi + math.fabs(math.atan(lcVec[0]/lcVec[1]))
+        else: # |atan(y/x)| + 90 degrees or + 270 degrees   - radians
+            alpha = (self.quadrant - 1) * halfpi + math.fabs(math.atan(lcVec[1]/lcVec[0]))
+
+        #konverter til grader
+        alpha = math.degrees(alpha)
+
+        # 360/12 = 30 -> vinkel / 30 = time.
+        hours = math.floor(alpha / 30)
+
+        # resten bak hours er minutter, * 60 for antall minutter. (10.5 = 10 timer 30 minutter)
+        minutes = math.floor(((alpha / 30) - hours) * 60)
+
+        #if pm(12:00 -> 23:59): legg til 12 timer på klokkeutregninga!
+        #   (False*x = 0, True * x = x.)
+        #   RETURNER (HOURS+12*PM, MINUTES) SOM TUPLE ISTEDET ETTERHVERT.
+        """
+        print (self.pm)
+        time = (hours + 12*self.pm, minutes)
+        if self.pm and time[0] < 12:
+            self.pm = False
+            self.calendar.nextDay()
+            print(calendar.toString())
+            time[0] = time[0] - 24
+        if ((not self.pm) and time[0] >=12):
+            self.pm = True #time[0] = timer etter am/pm regning
         
+        return time
+        """
+        return (hours + 12*self.pm, minutes)
 
-
-def findTime(lineEnd, center, quadrant, pm):        # TESTED, WORKING BIATCH
-    halfpi  = math.pi / 2
-    
-    # 1. finn vektor, gange med -1 for å sleppe mongotenkning. da er Y oppover positiv.
-    lcVec = lineEnd[0] - center[0], (lineEnd[1] - center[1]) * - 1
-    #regn ut vinkelen alpha!
-    if quadrant == 1 or quadrant == 3: # |atan(x/y)| + 0 degrees or + 180 degrees   - radians
-        alpha = (quadrant - 1) * halfpi + math.fabs(math.atan(lcVec[0]/lcVec[1]))
-    else: # |atan(y/x)| + 90 degrees or + 270 degrees   - radians
-        alpha = (quadrant - 1) * halfpi + math.fabs(math.atan(lcVec[1]/lcVec[0]))
-
-    #konverter til grader
-    alpha = math.degrees(alpha)
-
-    # 360/12 = 30 -> vinkel / 30 = time.
-    hours = math.floor(alpha / 30)
-
-    # resten bak hours er minutter, * 60 for antall minutter. (10.5 = 10 timer 30 minutter)
-    minutes = math.floor(((alpha / 30) - hours) * 60)
-
-    #if pm(12:00 -> 23:59): legg til 12 timer på klokkeutregninga!
-    #   (False*x = 0, True * x = x.)
-    return "{:d}:{:d}".format(hours + 12*pm, minutes)
-
+# finn kvadrant for gitt koordinat paa timeviseren, kalles bare ved initialiseringen av klassen.
 def findQuadrant(lineEnd, center):
     # 1. finn vektor, gange med -1 for å sleppe mongotenkning. da er Y oppover positiv.
     lcVec = x, y = lineEnd[0] - center[0], (lineEnd[1] - center[1]) * - 1
