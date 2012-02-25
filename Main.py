@@ -3,16 +3,16 @@ pygame.init()
 
 # CONSTANTS #
 # --------- #
-screenSize = width, height = 1024, 1024
+screenSize = width, height = 1400, 900
 center = center_w, center_h =  width/2, height/2
 backgroundColor = 50, 20, 30
 textColor = 0, 0, 0
-distance = 256
-lineColor = 255, 127, 255
+distance = 86
+lineColor = 200, 255, 255
 timePos = 16, 16
-timeFont = pygame.font.Font(None, 64)
+#timeFont = pygame.font.Font(None, 64)
 dateFont = pygame.font.Font(None, 32)
-datePos = (16, 80)
+datePos = (26, 156)
 square = pygame.image.load("square.png")
 
 #screen = pygame.display.set_mode(screenSize)
@@ -28,7 +28,7 @@ pm = True
 
 # INITIALIZE CLASSES ETC. #
 # ----------------------- #
-renderer = Renderer.Renderer(screenSize, backgroundColor, lineColor, center, square, timePos, timeFont, datePos, dateFont, textColor)
+renderer = Renderer.Renderer(screenSize, backgroundColor, lineColor, center, square, timePos, datePos, dateFont, textColor)
 logic = Logic.Logic(center, distance, squarePos, lineEnd, pm, squareSize, renderer)
 # GAME LOOP #
 # --------- #

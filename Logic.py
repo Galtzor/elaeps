@@ -96,7 +96,6 @@ class Logic:
             if self.pm:
                 self.pm = False     # ERSTATT PM SKJEKKEN MED ET FUNKSJONSKALL FOR aa ENDRE DAG.
                 self.calendar.nextDay()
-                print(self.calendar.toString())
             else: self.pm = True
         else:
             self.quadrant = self.quadrant + 1
